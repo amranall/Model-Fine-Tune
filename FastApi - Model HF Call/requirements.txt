@@ -1,0 +1,8 @@
+fastapi
+transformers
+torch
+uvicorn
+python-dotenv
+optimum[onnxruntime]  # For CPU optimizations with ONNX Runtime
+accelerate            # For managing multi-device setup (CPU/GPU)
+gunicorn              # For running multiple workers
