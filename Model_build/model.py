@@ -4,12 +4,16 @@ import torch.optim as optim
 import numpy as np
 import nltk
 from nltk.tokenize import word_tokenize
+from torch.utils.data import DataLoader, Dataset
 
-# Sample text data
-text = "This is a sample text for generating random text using a Transformer model."
+# Download NLTK data files
+nltk.download('punkt')
+
+# Sample initial text data
+initial_text = "This is a sample text for generating random text using a Transformer model."
 
 # Tokenize the text
-tokens = word_tokenize(text)
+tokens = word_tokenize(initial_text)
 vocab = set(tokens)
 word2idx = {word: idx for idx, word in enumerate(vocab)}
 idx2word = {idx: word for word, idx in word2idx.items()}
@@ -23,7 +27,7 @@ class TransformerModel(nn.Module):
         super(TransformerModel, self).__init__()
         self.embedding = nn.Embedding(vocab_size, d_model)
         self.pos_encoder = nn.Embedding(max_len, d_model)
-        self.transformer = nn.Transformer(d_model, nhead, num_encoder_layers, num_decoder_layers, dim_feedforward)
+        self.transformer = nn.Transformer(d_model, nhead, num_encoder_layers, num_decoder_layers, dim_feedforward, batch_first=True)
         self.fc_out = nn.Linear(d_model, vocab_size)
         self.d_model = d_model
         self.max_len = max_len
@@ -58,7 +62,7 @@ model = TransformerModel(vocab_size, d_model, nhead, num_encoder_layers, num_dec
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
-# Training loop with teacher forcing
+# Training loop
 for epoch in range(num_epochs):
     model.train()
     optimizer.zero_grad()
@@ -66,7 +70,6 @@ for epoch in range(num_epochs):
     src = torch.tensor(token_indices[:-1]).unsqueeze(0)
     tgt = torch.tensor(token_indices[1:]).unsqueeze(0)
 
-    # Teacher forcing: use the actual next token as the input for the next step
     output = model(src, tgt[:, :-1])
     loss = criterion(output.view(-1, vocab_size), tgt[:, 1:].contiguous().view(-1))
     loss.backward()
@@ -74,22 +77,5 @@ for epoch in range(num_epochs):
 
     print(f'Epoch {epoch+1}/{num_epochs}, Loss: {loss.item()}')
 
-
-# Generate text
-def generate_text(model, start_token, max_len=50):
-    model.eval()
-    input_seq = torch.tensor([[start_token]])
-    generated_tokens = [start_token]
-
-    for _ in range(max_len):
-        output = model(input_seq, input_seq)
-        next_token = torch.argmax(output[0, -1, :]).item()
-        generated_tokens.append(next_token)
-        input_seq = torch.tensor([generated_tokens])
-
-    return ' '.join([idx2word[token] for token in generated_tokens])
-
-# Generate random text
-start_token = word2idx['This']
-generated_text = generate_text(model, start_token)
-print(generated_text)
+# Save the model
+torch.save(model.state_dict(), 'initial_model.pth')
