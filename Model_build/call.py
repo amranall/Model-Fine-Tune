@@ -2,18 +2,14 @@ import torch
 import torch.nn as nn
 import nltk
 from nltk.tokenize import word_tokenize
+import pickle
 
 # Download NLTK data files
 nltk.download('punkt')
 
-# Additional text data for fine-tuning
-additional_text = "Here is some more text for fine-tuning the Transformer model. This should help the model learn better."
-
-# Tokenize the additional text
-new_tokens = word_tokenize(additional_text)
-vocab = set(new_tokens)
-word2idx = {word: idx for idx, word in enumerate(vocab)}
-idx2word = {idx: word for word, idx in word2idx.items()}
+# Load the vocabulary
+with open('vocab.pkl', 'rb') as f:
+    word2idx, idx2word = pickle.load(f)
 
 # Define the Transformer Model
 class TransformerModel(nn.Module):
@@ -41,7 +37,7 @@ class TransformerModel(nn.Module):
         return output
 
 # Hyperparameters
-vocab_size = len(vocab)
+vocab_size = len(word2idx)
 d_model = 128
 nhead = 8
 num_encoder_layers = 3
@@ -52,18 +48,8 @@ max_len = 50
 # Initialize the model with the new vocab size
 model = TransformerModel(vocab_size, d_model, nhead, num_encoder_layers, num_decoder_layers, dim_feedforward, max_len)
 
-# Load the initial model state dictionary with weights_only=True
-initial_state_dict = torch.load('movie_recommendation_model.pth', map_location=torch.device('cpu'), weights_only=True)
-
-# Update the model with the initial state dictionary, excluding the embedding and fc_out layers
-model_dict = model.state_dict()
-pretrained_dict = {k: v for k, v in initial_state_dict.items() if k in model_dict and k not in ['embedding.weight', 'fc_out.weight', 'fc_out.bias']}
-model_dict.update(pretrained_dict)
-model.load_state_dict(model_dict)
-
-# Initialize the embedding and fc_out layers with the new vocab size
-model.embedding = nn.Embedding(vocab_size, d_model)
-model.fc_out = nn.Linear(d_model, vocab_size)
+# Load the fine-tuned model state dictionary with weights_only=True
+model.load_state_dict(torch.load('movie_recommendation_model.pth', map_location=torch.device('cpu'), weights_only=True))
 
 # Generate text function
 def generate_text(model, start_token, max_len=50):
@@ -106,7 +92,7 @@ def recommend_movies(user_input):
     return generated_text
 
 # Example user input
-user_input = "Movie A."
+user_input = "I want to watch a movie similar to Movie A."
 recommended_movies = recommend_movies(user_input)
 print(recommended_movies)
 

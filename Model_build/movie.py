@@ -5,6 +5,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, Dataset
+import pickle
 
 # Download NLTK data files
 nltk.download('punkt')
@@ -109,5 +110,7 @@ for epoch in range(num_epochs):
 
     print(f'Epoch {epoch+1}/{num_epochs}, Loss: {total_loss/len(dataloader)}')
 
-# Save the fine-tuned model
+# Save the fine-tuned model and vocabulary
 torch.save(model.state_dict(), 'movie_recommendation_model.pth')
+with open('vocab.pkl', 'wb') as f:
+    pickle.dump((word2idx, idx2word), f)

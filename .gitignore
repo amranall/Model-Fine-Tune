@@ -1,3 +1,4 @@
 fine_tuned_model.pth
 initial_model.pth
 movie_recommendation_model.pth
+vocab.pkl
